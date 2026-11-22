@@ -18750,3 +18750,18 @@ Run on 2026-11-21 on Linux. Each control is one change to the branch, run alone 
 ```sh
 TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios go test -count=1 -v -run '^TestKeysLostWithALinkAreDroppedAndThePersonIsTold$' .
 ```
+
+## A t=f stream is placed with each frame
+
+`TestAFileStreamIsPlacedWithEachFrame` runs frameloop in a pane with the file transport: each frame is one a=T,t=f inside a synchronized update, from a ring of three files, under one image id, the way srterm sends its frames. After the first frames, every frame must reach the host as one a=T that places it, with no a=t and no a=p on its own.
+
+Run on 2026-11-22 on Linux, real backend, daemon mode, against main at 439add5fa.
+
+| Control | Test | Result | Verdict |
+| --- | --- | --- | --- |
+| `internal/app/kitty_passthrough_forward.go` of main | `TestAFileStreamIsPlacedWithEachFrame` | 3 of 3 runs: 0 frames with their placement, 108 frames alone, 108 placements on their own | **caught** |
+| This change | `TestAFileStreamIsPlacedWithEachFrame` | 5 of 5 runs pass: 108 frames with their placement, none alone | fixed |
+
+```sh
+TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios go test -count=1 -v -run '^TestAFileStreamIsPlacedWithEachFrame$' .
+```
