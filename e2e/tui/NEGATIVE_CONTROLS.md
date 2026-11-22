@@ -18711,3 +18711,18 @@ Run on Linux on 2026-11-20. The branch passes it three times in one process (`-c
 TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios \
   go test -count=1 -run '^TestComingHomeFromAHostAsksForNoRetry$' -v .
 ```
+
+## An attach through a host says what it waits for
+
+`TestAttachOnAHostSaysWhatItWaitsFor` holds the first link attempt of the daemon on this machine with knob `hold_host_dial`, and runs `tuios attach --host build`. The terminal must say "Connecting to build. Waiting for the link..." while the link is held. With the hold lifted, the far session is drawn. With the hold kept, the attach ends with "The link to build did not come up in 15 seconds." and the `tuios hosts` fix.
+
+Run on 2026-11-22 on Linux, real backend, against main at 6389da637.
+
+| Control | Test | Result | Verdict |
+| --- | --- | --- | --- |
+| This change without the status lines in `runDaemonSessionOn` | `TestAttachOnAHostSaysWhatItWaitsFor/link_comes` | 3 of 3 runs: "the terminal did not say it waits for the link". The screen showed only "Starting TUIOS daemon...". | **caught** |
+| This change | `TestAttachOnAHostSaysWhatItWaitsFor` | 5 of 5 runs pass | fixed |
+
+```sh
+TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios go test -count=1 -v -run '^TestAttachOnAHostSaysWhatItWaitsFor$' .
+```
