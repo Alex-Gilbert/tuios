@@ -34,6 +34,12 @@ func handleMouseRelease(msg tea.MouseReleaseMsg, o *app.OS) (*app.OS, tea.Cmd) {
 		o.ReleaseClickReveal(msg.X, msg.Y)
 	}()
 
+	// The end of a drag owned by a pane whose program asked for pointer
+	// capture. See pointer_capture.go.
+	if pointerCaptureRelease(o, msg.Mouse()) {
+		return o, nil
+	}
+
 	if o.QuickLookBarRelease() {
 		return o, nil
 	}
