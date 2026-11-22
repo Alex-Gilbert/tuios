@@ -18718,3 +18718,19 @@ Run on Linux on 2026-11-20. The branch passes it three times in one process (`-c
 TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios \
   go test -count=1 -run '^TestComingHomeFromAHostAsksForNoRetry$' -v .
 ```
+
+## A detached stand-in keeps its harness's terminal open
+
+`TestAgentReportOnlyFromTheHarnessInThePane` runs the hook under a stand-in server that gives the harness a pty of its own. Nothing referred to the pty master once the harness had started, so the garbage collector could close it while the harness ran. The kernel then hung up the harness's terminal. SIGHUP ended the harness and the hook before the hook wrote its `--explain` line, and the test read an empty line. The server now closes the master after the harness exits.
+
+Run on 2026-11-22 on Linux, real backend, against main at 202648800. Both controls run the garbage collector every millisecond in the stand-in server, so the collector runs while the harness does.
+
+| Control | Test | Result | Verdict |
+| --- | --- | --- | --- |
+| Main, collector every millisecond | `TestAgentReportOnlyFromTheHarnessInThePane` | 3 of 3 runs: "the hook's --explain line is not JSON: unexpected end of JSON input", the CI failure | **caught** |
+| This change, collector every millisecond | `TestAgentReportOnlyFromTheHarnessInThePane` | 3 of 3 runs pass | fixed |
+| This change | `TestAgentReportOnlyFromTheHarnessInThePane` | 5 of 5 runs pass | fixed |
+
+```sh
+TUIOS_E2E=1 TUIOS_E2E_BIN=/path/to/tuios go test -count=1 -v -run '^TestAgentReportOnlyFromTheHarnessInThePane$' .
+```
