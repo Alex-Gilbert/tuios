@@ -266,8 +266,7 @@ func (d *Daemon) delegateLook(window string, closedEv bool) {
 			r.State, r.AskedAt, r.QuestionMail = delegateAsking, now, mail
 		})
 	case w.AgentState == AgentStateIdle || w.AgentState == AgentStateDone || w.AgentState == AgentStateErrored || w.AgentState == AgentStateLimitReached:
-		if w.AgentReason == AgentReasonSilent || w.AgentStateAt <= rec.StartedAt*int64(time.Millisecond) {
-			// The rest the child was in when its prompt was typed.
+		if !delegateRestsDone(w, rec.StartedAt) {
 			return
 		}
 		state := delegateDone
@@ -294,6 +293,20 @@ func (d *Daemon) delegateLook(window string, closedEv bool) {
 		// The question was answered, and the child works again.
 		sess.updateDelegation(window, func(r *Delegation) { r.State, r.AskedAt, r.QuestionMail = delegateWorking, 0, 0 })
 	}
+}
+
+// delegateRestsDone reports whether a child at rest finished the task it was
+// given at startedAt (unix ms). It did not when the rest is the one it was in
+// when its prompt was typed, when it went silent, or when its screen says it
+// still runs a background job it will wake for, such as Claude Code ending
+// its turn on a backgrounded test run.
+// A waits_on change on its own starts no look, so a child that leaves a job
+// running for good (a dev server) reads done only at its next turn or close.
+func delegateRestsDone(w WindowState, startedAt int64) bool {
+	if w.AgentReason == AgentReasonSilent || w.AgentStateAt <= startedAt*int64(time.Millisecond) {
+		return false
+	}
+	return agentWaitsOn(w) == ""
 }
 
 // delegateGone settles a child whose window closed before it finished. The
